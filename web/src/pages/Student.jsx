@@ -3,10 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { getStudentMetrics } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeft } from 'lucide-react';
+import MetricsGrid from '../components/MetricsGrid';
 
 function Student() {
   const { id } = useParams();
   const [metrics, setMetrics] = useState([]);
+  const [latestMetrics, setLatestMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('1h');
 
@@ -45,9 +47,31 @@ function Student() {
         engagement: (m.avg_engagement * 100).toFixed(1),
         boredom: (m.avg_boredom * 100).toFixed(1),
         frustration: (m.avg_frustration * 100).toFixed(1),
+        attentiveness: ((m.avg_attentiveness || 0) * 100).toFixed(1),
+        positivity: ((m.avg_positivity || 0) * 100).toFixed(1),
+        volatility: ((m.avg_volatility || 0) * 100).toFixed(1),
+        distraction: ((m.avg_distraction || 0) * 100).toFixed(1),
+        fatigue: ((m.avg_fatigue || 0) * 100).toFixed(1),
+        risk: ((m.avg_risk || 0) * 100).toFixed(1),
       }));
 
       setMetrics(data);
+
+      // Set latest metrics for grid display
+      if (response.data.metrics.length > 0) {
+        const latest = response.data.metrics[response.data.metrics.length - 1];
+        setLatestMetrics({
+          avg_engagement: latest.avg_engagement || 0,
+          avg_attentiveness: latest.avg_attentiveness || 0,
+          avg_positivity: latest.avg_positivity || 0,
+          avg_boredom: latest.avg_boredom || 0,
+          avg_frustration: latest.avg_frustration || 0,
+          avg_volatility: latest.avg_volatility || 0,
+          avg_distraction: latest.avg_distraction || 0,
+          avg_fatigue: latest.avg_fatigue || 0,
+          avg_risk: latest.avg_risk || 0,
+        });
+      }
     } catch (error) {
       console.error('Failed to load student metrics:', error);
     } finally {
@@ -75,8 +99,17 @@ function Student() {
         </select>
       </div>
 
+      {/* Latest Metrics Grid */}
+      {latestMetrics && !loading && (
+        <div className="bg-white shadow-sm rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Metrics Snapshot</h2>
+          <MetricsGrid metrics={latestMetrics} />
+        </div>
+      )}
+
+      {/* Primary Metrics Chart */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Engagement Metrics</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Primary Engagement Metrics</h2>
         {loading ? (
           <div className="text-center py-8">Loading metrics...</div>
         ) : metrics.length === 0 ? (
@@ -89,9 +122,55 @@ function Student() {
               <YAxis label={{ value: 'Percentage', angle: -90, position: 'insideLeft' }} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="engagement" stroke="#10b981" name="Engagement" />
-              <Line type="monotone" dataKey="boredom" stroke="#f59e0b" name="Boredom" />
-              <Line type="monotone" dataKey="frustration" stroke="#ef4444" name="Frustration" />
+              <Line type="monotone" dataKey="engagement" stroke="#10b981" name="Engagement" strokeWidth={2} />
+              <Line type="monotone" dataKey="attentiveness" stroke="#3b82f6" name="Attentiveness" />
+              <Line type="monotone" dataKey="positivity" stroke="#f59e0b" name="Positivity" />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Negative Indicators Chart */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Negative Indicators</h2>
+        {loading ? (
+          <div className="text-center py-8">Loading metrics...</div>
+        ) : metrics.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No data available for this time range</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={metrics}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis label={{ value: 'Percentage', angle: -90, position: 'insideLeft' }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="boredom" stroke="#6b7280" name="Boredom" />
+              <Line type="monotone" dataKey="frustration" stroke="#f97316" name="Frustration" />
+              <Line type="monotone" dataKey="distraction" stroke="#06b6d4" name="Distraction" />
+              <Line type="monotone" dataKey="fatigue" stroke="#6366f1" name="Fatigue" />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Risk Score Chart */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Risk Assessment & Volatility</h2>
+        {loading ? (
+          <div className="text-center py-8">Loading metrics...</div>
+        ) : metrics.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No data available for this time range</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={metrics}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis label={{ value: 'Percentage', angle: -90, position: 'insideLeft' }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="risk" stroke="#ef4444" name="Risk Score" strokeWidth={2} />
+              <Line type="monotone" dataKey="volatility" stroke="#a855f7" name="Volatility" />
             </LineChart>
           </ResponsiveContainer>
         )}

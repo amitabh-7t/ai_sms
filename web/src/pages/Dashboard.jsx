@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { getDashboardSummary, getStudents } from '../api';
+import { getDashboardSummary, getStudents, getClassOverview } from '../api';
 import { Link } from 'react-router-dom';
 import LiveCard from '../components/LiveCard';
+import MetricsGrid from '../components/MetricsGrid';
 import { Activity, Users, AlertCircle, TrendingUp } from 'lucide-react';
 
 function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [students, setStudents] = useState([]);
+  const [classMetrics, setClassMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deviceId, setDeviceId] = useState('default');
 
@@ -16,12 +18,16 @@ function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [summaryRes, studentsRes] = await Promise.all([
+      const [summaryRes, studentsRes, metricsRes] = await Promise.all([
         getDashboardSummary(),
-        getStudents()
+        getStudents(),
+        getClassOverview(deviceId).catch(() => null)
       ]);
       setSummary(summaryRes.data);
       setStudents(studentsRes.data.students || []);
+      if (metricsRes) {
+        setClassMetrics(metricsRes.data);
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -92,6 +98,17 @@ function Dashboard() {
         })}
       </div>
 
+      {/* All 9 Metrics Overview */}
+      {classMetrics && (
+        <div className="bg-white shadow-sm rounded-xl p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Class Metrics Overview</h2>
+            <p className="text-sm text-gray-500 mt-1">Real-time engagement analysis for {deviceId}</p>
+          </div>
+          <MetricsGrid metrics={classMetrics} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Live Feed */}
         <div className="bg-white shadow rounded-lg">
@@ -100,7 +117,10 @@ function Dashboard() {
             <input
               type="text"
               value={deviceId}
-              onChange={(e) => setDeviceId(e.target.value)}
+              onChange={(e) => {
+                setDeviceId(e.target.value);
+                loadData();
+              }}
               placeholder="Device ID"
               className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />

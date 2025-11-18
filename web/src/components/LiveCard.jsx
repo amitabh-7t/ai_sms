@@ -72,9 +72,13 @@ function LiveCard({ deviceId }) {
                       Engagement: {engagement}%
                     </div>
                     {event.metrics && (
-                      <div className="mt-1 flex space-x-3 text-xs text-gray-500">
-                        <span>Boredom: {(event.metrics.boredom * 100).toFixed(0)}%</span>
-                        <span>Frustration: {(event.metrics.frustration * 100).toFixed(0)}%</span>
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <span className="text-emerald-600">Eng: {(event.metrics.engagement * 100).toFixed(0)}%</span>
+                        <span className="text-blue-600">Att: {((event.metrics.attentiveness || 0) * 100).toFixed(0)}%</span>
+                        <span className="text-amber-600">Pos: {((event.metrics.positivity || 0) * 100).toFixed(0)}%</span>
+                        <span className="text-gray-600">Bore: {(event.metrics.boredom * 100).toFixed(0)}%</span>
+                        <span className="text-orange-600">Frus: {(event.metrics.frustration * 100).toFixed(0)}%</span>
+                        <span className="text-red-600">Risk: {((event.metrics.risk || 0) * 100).toFixed(0)}%</span>
                       </div>
                     )}
                   </div>

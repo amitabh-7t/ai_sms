@@ -31,20 +31,27 @@ async def compute_minute_aggregates(db: Database, minutes_back: int = 5):
         to_time = datetime.utcnow()
         from_time = to_time - timedelta(minutes=minutes_back)
         
-        # Compute aggregates per student per minute
+        # Compute aggregates per student per minute (all 9 metrics)
         await db.execute(
             """
             INSERT INTO aggregates_minute (
-                minute_ts, student_id, avg_engagement, avg_boredom, 
-                avg_frustration, avg_attentiveness, sample_count
+                minute_ts, student_id, avg_engagement, avg_boredom,
+                avg_frustration, avg_attentiveness, avg_positivity,
+                avg_volatility, avg_distraction, avg_fatigue, avg_risk,
+                sample_count
             )
-            SELECT 
+            SELECT
                 date_trunc('minute', ts) as minute_ts,
                 student_id,
                 AVG((metrics->>'engagement')::float) as avg_engagement,
                 AVG((metrics->>'boredom')::float) as avg_boredom,
                 AVG((metrics->>'frustration')::float) as avg_frustration,
                 AVG((metrics->>'attentiveness')::float) as avg_attentiveness,
+                AVG((metrics->>'positivity')::float) as avg_positivity,
+                AVG((metrics->>'volatility')::float) as avg_volatility,
+                AVG((metrics->>'distraction')::float) as avg_distraction,
+                AVG((metrics->>'fatigue')::float) as avg_fatigue,
+                AVG((metrics->>'risk')::float) as avg_risk,
                 COUNT(*) as sample_count
             FROM events
             WHERE ts >= $1 AND ts < $2 AND student_id IS NOT NULL
@@ -54,6 +61,11 @@ async def compute_minute_aggregates(db: Database, minutes_back: int = 5):
                 avg_boredom = EXCLUDED.avg_boredom,
                 avg_frustration = EXCLUDED.avg_frustration,
                 avg_attentiveness = EXCLUDED.avg_attentiveness,
+                avg_positivity = EXCLUDED.avg_positivity,
+                avg_volatility = EXCLUDED.avg_volatility,
+                avg_distraction = EXCLUDED.avg_distraction,
+                avg_fatigue = EXCLUDED.avg_fatigue,
+                avg_risk = EXCLUDED.avg_risk,
                 sample_count = EXCLUDED.sample_count
             """,
             from_time, to_time

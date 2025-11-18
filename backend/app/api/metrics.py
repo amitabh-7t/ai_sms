@@ -46,11 +46,17 @@ async def get_student_metrics(
         try:
             rows = await db.fetch_all(
                 """
-                SELECT 
+                SELECT
                     minute_ts as timestamp,
                     avg_engagement,
                     avg_boredom,
                     avg_frustration,
+                    avg_attentiveness,
+                    avg_positivity,
+                    avg_volatility,
+                    avg_distraction,
+                    avg_fatigue,
+                    avg_risk,
                     sample_count as samples
                 FROM aggregates_minute
                 WHERE student_id = $1 AND minute_ts >= $2 AND minute_ts <= $3
@@ -68,11 +74,17 @@ async def get_student_metrics(
     try:
         rows = await db.fetch_all(
             """
-            SELECT 
+            SELECT
                 date_trunc('minute', ts) as timestamp,
                 AVG((metrics->>'engagement')::float) as avg_engagement,
                 AVG((metrics->>'boredom')::float) as avg_boredom,
                 AVG((metrics->>'frustration')::float) as avg_frustration,
+                AVG((metrics->>'attentiveness')::float) as avg_attentiveness,
+                AVG((metrics->>'positivity')::float) as avg_positivity,
+                AVG((metrics->>'volatility')::float) as avg_volatility,
+                AVG((metrics->>'distraction')::float) as avg_distraction,
+                AVG((metrics->>'fatigue')::float) as avg_fatigue,
+                AVG((metrics->>'risk')::float) as avg_risk,
                 COUNT(*) as samples
             FROM events
             WHERE student_id = $1 AND ts >= $2 AND ts <= $3
@@ -120,10 +132,16 @@ async def get_class_overview(
     try:
         class_data = await db.fetch_one(
             """
-            SELECT 
+            SELECT
                 AVG((metrics->>'engagement')::float) as avg_engagement,
                 AVG((metrics->>'boredom')::float) as avg_boredom,
                 AVG((metrics->>'frustration')::float) as avg_frustration,
+                AVG((metrics->>'attentiveness')::float) as avg_attentiveness,
+                AVG((metrics->>'positivity')::float) as avg_positivity,
+                AVG((metrics->>'volatility')::float) as avg_volatility,
+                AVG((metrics->>'distraction')::float) as avg_distraction,
+                AVG((metrics->>'fatigue')::float) as avg_fatigue,
+                AVG((metrics->>'risk')::float) as avg_risk,
                 COUNT(*) as total_samples,
                 COUNT(DISTINCT student_id) as active_students
             FROM events
@@ -149,6 +167,12 @@ async def get_class_overview(
             "avg_engagement": class_data.get("avg_engagement", 0.0) or 0.0,
             "avg_boredom": class_data.get("avg_boredom", 0.0) or 0.0,
             "avg_frustration": class_data.get("avg_frustration", 0.0) or 0.0,
+            "avg_attentiveness": class_data.get("avg_attentiveness", 0.0) or 0.0,
+            "avg_positivity": class_data.get("avg_positivity", 0.0) or 0.0,
+            "avg_volatility": class_data.get("avg_volatility", 0.0) or 0.0,
+            "avg_distraction": class_data.get("avg_distraction", 0.0) or 0.0,
+            "avg_fatigue": class_data.get("avg_fatigue", 0.0) or 0.0,
+            "avg_risk": class_data.get("avg_risk", 0.0) or 0.0,
             "total_samples": class_data.get("total_samples", 0) or 0,
             "active_students": class_data.get("active_students", 0) or 0,
             "alerts": alerts
@@ -160,6 +184,12 @@ async def get_class_overview(
             "avg_engagement": 0.0,
             "avg_boredom": 0.0,
             "avg_frustration": 0.0,
+            "avg_attentiveness": 0.0,
+            "avg_positivity": 0.0,
+            "avg_volatility": 0.0,
+            "avg_distraction": 0.0,
+            "avg_fatigue": 0.0,
+            "avg_risk": 0.0,
             "total_samples": 0,
             "active_students": 0,
             "alerts": []
