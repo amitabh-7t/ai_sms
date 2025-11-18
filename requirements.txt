@@ -1,0 +1,11 @@
+torch
+torchvision
+opencv-python
+numpy
+Pillow
+face_recognition
+mediapipe
+fastapi
+uvicorn[standard]
+python-multipart
+pandas

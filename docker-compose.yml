@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: aisms_postgres
+    environment:
+      POSTGRES_DB: aismsdb
+      POSTGRES_USER: aismsuser
+      POSTGRES_PASSWORD: aismspass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/app/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aismsuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aisms_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aisms_backend
+    environment:
+      DATABASE_URL: postgresql://aismsuser:aismspass@postgres:5432/aismsdb
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-please-change-in-production}
+      INGEST_API_KEY: ${INGEST_API_KEY:-dev-ingest-key}
+      MODEL_PATH: /app/models/emotion_model.pt
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./src:/app/src
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+      "
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: aisms_web
+    environment:
+      VITE_API_BASE: http://localhost:8001
+      VITE_WS_BASE: ws://localhost:8001
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

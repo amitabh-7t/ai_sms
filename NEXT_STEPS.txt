@@ -1,0 +1,18 @@
+NEXT STEPS:
+
+1. Activate the environment:
+   source .venv/bin/activate
+
+2. Upgrade pip:
+   pip install --upgrade pip
+
+3. Install dependencies:
+   pip install -r requirements.txt
+
+   *Note for Mac Users: If 'face_recognition' fails to install, run:
+    brew install cmake
+    Then try pip install again.
+
+4. Run the enrollment tool:
+   python src/enroll_webcam.py
+
